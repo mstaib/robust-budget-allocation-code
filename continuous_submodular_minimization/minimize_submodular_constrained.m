@@ -41,8 +41,6 @@ if is_linear && is_DR_submodular
     out_struct.rho = num2cell(out_struct.rho);
 else
     out_struct = minimize_submodular_regularized_pairwise_fw(F,param);
-    %out_struct = minimize_submodular_regularized_lazy_fw(F,param);
-    %out_struct = minimize_submodular_regularized_fw(F,param);
     mapping = @(x) x;
 end
 
