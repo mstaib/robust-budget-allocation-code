@@ -5,15 +5,6 @@ function [xmin,Fmin,out_struct,certified_suboptimality_gap] = minimize_submodula
 % F takes two arguments (x,param_F)
 % we assume param_F is passed to us as param.param_F
 
-% if ~constraints_tight(R_cell, param)
-%     xmin = param.param_F.x_upper_vec;
-%     Fmin = F(xmin, param.param_F);
-%     out_struct = [];
-%     certified_suboptimality_gap = 0;
-%     
-%     return;pav_custom
-% end
-
 if ~isfield(param, 'weights')   
     fprintf('Computing weights...');
     weights_tic = tic;
@@ -22,30 +13,10 @@ if ~isfield(param, 'weights')
     fprintf('took %0.1f seconds\n', weights_time);
 end
 
-is_linear = false; %is_R_linear(param.weights);
-is_DR_submodular = false;
-if isfield(param, 'y_mat')
-    is_DR_submodular = all(param.y_mat <= 0 | param.y_mat >= 1);
-end
-
-is_linear = false;
-if is_linear && is_DR_submodular
-    weights = zeros(length(param.weights),1);
-    for ii=1:length(param.weights)
-        weights(ii) = param.weights{ii}(1);
-    end
-    [G, elem_weights, t_vec, mapping] = map_lattice_to_set(F, weights, param.param_F.k_vec);%, 0.1);
-
-    param.weights = elem_weights;
-    out_struct = minimize_submodular_set_regularized_pairwise_fw(G,param);
-    out_struct.rho = num2cell(out_struct.rho);
-else
-    out_struct = minimize_submodular_regularized_pairwise_fw(F,param);
-    mapping = @(x) x;
-end
+out_struct = minimize_submodular_regularized_pairwise_fw(F,param);
 
 multiplier_timer = tic;
-[xmin,Fmin,certified_suboptimality_gap] = find_optimal_continuous_x(F, R_cell, oracle_R, param, out_struct.rho, mapping);
+[xmin,Fmin,certified_suboptimality_gap] = find_optimal_continuous_x(F, oracle_R, param, out_struct.rho);
 out_struct.multiplier_time = toc(multiplier_timer);
 
 % so we don't need to recompute this every time
@@ -53,43 +24,16 @@ out_struct.weights = param.weights;
 
 end
 
-function is_tight = constraints_tight(R_cell, param)
-    val = 0;
-    for kk=1:length(param.param_F.x_upper_vec)
-        val = val + R_cell{kk}(param.param_F.x_upper_vec(kk));
-    end
-    
-    is_tight = (val > param.constraint);
-end
-
-function is_linear = is_R_linear(weights)
-    % check for compatibility with Ene's reduction
-    tol = 1e-10;
-    function val = is_coordinate_linear(weights_arr)
-        if isempty(weights_arr)
-            val = true;
-            return;
-        end
-
-        val = all(abs(weights_arr - weights_arr(1)) < tol);
-    end
-    is_linear = all(cellfun(@is_coordinate_linear, weights));
-end
-
-function [xmin,Fmin,certified_suboptimality_gap] = find_optimal_continuous_x(F, R_cell, oracle_R, param, rho, mapping)
+function [xmin,Fmin,certified_suboptimality_gap] = find_optimal_continuous_x(F, oracle_R, param, rho)
     function val = oracle_H(x)
         val = F(x,param.param_F);
     end
     function val = oracle_R_unscaled(x)
         x_ctns = interpolate(x, param.param_F.x_lower_vec, param.param_F.x_upper_vec, param.param_F.k_vec);
         val = oracle_R(x_ctns);
-%         val = 0;
-%         for kk=1:length(x)
-%             val = val + R_cell{kk}(x_ctns(kk));
-%         end
     end
 
-    [xmin_low, xmin_high] = greedy_sort_search(rho, @oracle_R_unscaled, param.constraint, mapping);
+    [xmin_low, xmin_high] = greedy_sort_search(rho, @oracle_R_unscaled, param.constraint);
     if xmin_low == xmin_high
         xmin = xmin_low;
         Fmin = oracle_H(xmin);
@@ -127,7 +71,7 @@ function [xmin,Fmin,certified_suboptimality_gap] = find_optimal_continuous_x(F, 
     certified_suboptimality_gap.lambda = lambda;
 end
 
-function [xmin_low, xmin_high] = greedy_sort_search(rho, oracle_R_unscaled, constraint, mapping)
+function [xmin_low, xmin_high] = greedy_sort_search(rho, oracle_R_unscaled, constraint)
     n = length(rho);
     num_total_rhos = sum(cellfun(@(x) length(x), rho));
     
@@ -143,7 +87,7 @@ function [xmin_low, xmin_high] = greedy_sort_search(rho, oracle_R_unscaled, cons
     end_inx = num_total_rhos;
     
     while end_inx - start_inx > 1
-        x_all = greedy_sort_subsample(rho, start_inx, end_inx, skip, mapping);
+        x_all = greedy_sort_subsample(rho, start_inx, end_inx, skip);
         
         [lower_inx, upper_inx] = binary_feasibility_search(x_all, oracle_R_unscaled, constraint);
         
@@ -187,7 +131,7 @@ function [lower_inx, upper_inx] = binary_feasibility_search(x_all, oracle_R_unsc
     end
 end
 
-function x_all = greedy_sort_subsample(rho, start_inx, end_inx, skip, mapping)
+function x_all = greedy_sort_subsample(rho, start_inx, end_inx, skip)
     % if a=start_inx, b=end_inx, s=skip, we want to concatenate all the
     % vectors x we get with the following indices in the full ordering:
     % a, a + s, a + 2s, ..., a + ms, b
@@ -204,97 +148,9 @@ function x_all = greedy_sort_subsample(rho, start_inx, end_inx, skip, mapping)
     n = length(rho);
     
     [is, js] = build_increment_ordering_mex(rho);
-    %num_total_rhos = length(is);
-    
-    non_trivial_mapping = (n ~= length(mapping(zeros(n,1))));
-    if non_trivial_mapping
-        x_all = fill_in_subsampled_x_all_mapping(is, js, n, num_subsampled_vecs, start_inx, end_inx, skip, mapping);
-    else
-        %x_all = fill_in_subsampled_x_all_no_mapping(is, js, n, num_subsampled_vecs, start_inx, end_inx, skip);
-        x_all = fill_in_subsampled_x_all_no_mapping_mex(is, js, n, num_subsampled_vecs, start_inx, end_inx, skip);
-    end
-
-%     % now go through all elements
-%     xold = zeros(n,1);
-%     
-%     n_expanded = length(mapping(xold));
-%     % i.e. we _are_ using a mapping to expand binary case to multi case
-%     if n_expanded ~= n
-%         x_all = zeros(n_expanded, num_subsampled_vecs);
-%     else
-%         x_all = zeros(n, num_subsampled_vecs);
-%     end
-%     
-%     k = 0;
-%     for i=1:num_total_rhos
-%         xnew = xold; xnew(is(i))=js(i);
-%         %x_all(:,i) = xnew;
-%         xold = xnew;
-%         
-%         if i == end_inx
-%             x_all(:,num_subsampled_vecs) = mapping(xnew);
-%             return;
-%         end
-%         
-%         if i == start_inx + k * skip
-%             % if want to use DR reduction need to use mapping
-%             x_all(:,k+1) = mapping(xnew);
-%             k = k+1;
-%         end
-%     end
-
+    x_all = fill_in_subsampled_x_all_no_mapping_mex(is, js, n, num_subsampled_vecs, start_inx, end_inx, skip);
 end
 
-function x_all = fill_in_subsampled_x_all_mapping(is, js, n, num_subsampled_vecs, start_inx, end_inx, skip, mapping)
-    num_total_rhos = length(is);
-    
-    xold = zeros(n,1);
-    n_expanded = length(mapping(xold));
-    x_all = zeros(n_expanded, num_subsampled_vecs);
-
-    k = 0;
-    for i=1:num_total_rhos
-        xnew = xold; xnew(is(i))=js(i);
-        %x_all(:,i) = xnew;
-        xold = xnew;
-        
-        if i == end_inx
-            x_all(:,num_subsampled_vecs) = mapping(xnew);
-            return;
-        end
-        
-        if i == start_inx + k * skip
-            % if want to use DR reduction need to use mapping
-            x_all(:,k+1) = mapping(xnew);
-            k = k+1;
-        end
-    end
-end
-
-function x_all = fill_in_subsampled_x_all_no_mapping(is, js, n, num_subsampled_vecs, start_inx, end_inx, skip)
-    num_total_rhos = length(is);
-    
-    xold = zeros(n,1);
-    x_all = zeros(n, num_subsampled_vecs);
-
-    k = 0;
-    for i=1:num_total_rhos
-        xnew = xold; xnew(is(i))=js(i);
-        %x_all(:,i) = xnew;
-        xold = xnew;
-        
-        if i == end_inx
-            x_all(:,num_subsampled_vecs) = xnew;
-            return;
-        end
-        
-        if i == start_inx + k * skip
-            % if want to use DR reduction need to use mapping
-            x_all(:,k+1) = xnew;
-            k = k+1;
-        end
-    end
-end
 
 function weights = compute_weights_from_regularizer(R_cell, param)
     x_lower = param.param_F.x_lower_vec;
