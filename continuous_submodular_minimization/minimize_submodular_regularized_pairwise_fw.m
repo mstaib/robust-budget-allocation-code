@@ -41,12 +41,7 @@ else
     min_rho = min(cellfun(@min, rho));
     max_rho = max(cellfun(@max, rho));
     max_rho_after_shift = max_rho - min_rho;
-    rho = cellfun(@(x) (x-min_rho)/max_rho_after_shift, rho, 'UniformOutput', false);
-    
-    
-    %rho = cellfun(@(x) x-min_rho, rho,'UniformOutput',false);
-    %max_rho = max(cellfun(@max, rho));
-    %rho = cellfun(@(x) x/max_rho, rho,'UniformOutput',false);
+    rho = cellfun(@(x) (x-min_rho)/max_rho_after_shift, rho, 'UniformOutput', false); %normalize
 end
 
 if verbose
@@ -84,42 +79,32 @@ for iter=1:maxiter
     [a,b] = min(inner_prods);
     b = ind(b);
     
-    %away_direction = cellfun(@(x,y) x - y, w, ws{b}, 'UniformOutput', false);
     away_direction = cell_sum_mex(w, ws{b}, -1);
-    max_step_away = convex_combinations(b);
-    %fw_direction = cellfun(@(x,y) x - y, wbar, w, 'UniformOutput', false);
+    max_step = convex_combinations(b);
     fw_direction = cell_sum_mex(wbar, w, -1);
-    max_step_fw = 1;
-    %direction = cellfun(@(x,y) x + y, fw_direction, away_direction, 'UniformOutput', false);
     direction = cell_sum_mex(fw_direction, away_direction, 1);
-    max_step = max_step_away;
     
-    dual_fw_pair(iter) = cell_innerprod_mex(w, rho) + regularize_sum(rho, weights); %sum(cellfun(@(x,z) 0.5*z*sum(x.^2), rho, weights_cell));
-    primal_fw_pair(iter) = f + regularize_sum(rho, weights); %sum(cellfun(@(x,z) 0.5*z*sum(x.^2), rho, weights_cell));
+    dual_fw_pair(iter) = cell_innerprod_mex(w, rho) + regularize_sum(rho, weights);
+    primal_fw_pair(iter) = f + regularize_sum(rho, weights);
     if iter > 1
         if primal_fw_pair(iter) < primal_fw_pair(iter-1)
             best_rho = rho;
         else
             primal_fw_pair(iter) = primal_fw_pair(iter-1);
         end
-        %primal_fw_pair(iter) = min(primal_fw_pair(iter-1:iter));
     end    
     
     primal_fw_pair_min(iter) = Fmin;
     fw_gap(iter) = primal_fw_pair(iter) - (dual_fw_pair(iter) + H0);
-    %dual_fw_pair_min(iter)  
     
     % line search
     aa = cell_innerprod_mex(rho, direction);
-    %bb = sum( cellfun(@(x) sum(x.^2), direction) );
     bb = cell_innerprod_mex(direction, direction);
     step(iter) = min(max_step,max(aa/bb,0));
     
     low_step = 0;
     high_step = max_step;
-    %low_val = fw_dual_objective_custom(w, low_step, direction, weights);
-    %high_val = fw_dual_objective_custom(w, high_step, direction, weights);
-    while (high_step - low_step) > 1e-2 * max_step % how to choose this?
+    while (high_step - low_step) > 1e-2 * max_step % how to choose this threshold?
         step1 = (2*low_step+high_step)/3;
         step2 = (low_step+2*high_step)/3;
         val1 = fw_dual_objective_custom(w, step1, direction, weights);
@@ -137,12 +122,10 @@ for iter=1:maxiter
     % convex_combinations set
     step(iter) = high_step;
     
-    
     convex_combination_direction = zeros(1,maxiter+1);
     convex_combination_direction(iter+1)=1;
     convex_combination_direction(b) = -1;
     convex_combinations = convex_combinations + step(iter) * convex_combination_direction;
-    %w = cellfun(@(x,y) x + step(iter) * y, w, direction, 'UniformOutput', false);
     w = cell_sum_mex(w, direction, step(iter));
     
     iter_time(iter) = toc(iter_timer);
@@ -176,18 +159,9 @@ end
 function rho = grad_w(w, weights)
     rho = cell(sort(size(w),'descend'));
     for i=1:length(w)
-        %for when we generalize weights to each coordinate
-        %rho{i} = -pav(weights{i}.^(-1).*w{i},weights{i});
         rho{i} = -pav_custom(weights{i}.^(-1).*w{i},weights{i});
     end
     %rho = rho(:); %so the inner product code doesn't break
-end
-
-function val = objective(w, step, direction, weights)
-    wnew = cellfun(@(x,y) x + step*y, w, direction, 'UniformOutput', false);
-    rho = grad_w(wnew, weights);
-    
-    val = cell_innerprod(wnew, rho) + regularize_sum(rho, weights); %sum(cellfun(@(x,z) 0.5*z*sum(x.^2), rho, weights));
 end
 
 function val = regularize_sum(rho, weights)
