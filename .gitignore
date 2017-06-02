@@ -1,0 +1,21 @@
+# mex binary files
+*.mexa64
+*.mexmaci64
+*.o
+
+# temp editor files
+*.swp
+*~
+
+# data dump folders
+data_from_cluster
+all_local_data
+confidence_test_data
+dnorm_threshold_data
+dnorm_threshold_data_gradient
+ellipsoid_threshold_data
+robustness_test_data
+yahoo_test_data
+
+# saved .mat files
+*.mat
