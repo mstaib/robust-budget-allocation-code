@@ -23,16 +23,11 @@ for ii=1:length(test_params)
         fprintf('Exception message: %s\n', ME.message);
         continue
     end
-% 
-%     if  summary.rel_oblivious_gap > 0.05
-%         fprintf('Found nontrivial robustness with gap %0.3f, relative gap %0.3f\n', ...
-%             summary.oblivious_gap, summary.rel_oblivious_gap);
-%     end
-% 
-%     uuid = char(java.util.UUID.randomUUID);
-%     filepath = strcat('all_local_data/', uuid, '.mat');
-%     fprintf('Finished run, saving to %s\n', filepath);
-%     save(filepath, 'out_struct_max', 'test_param', 'summary');
+
+    uuid = char(java.util.UUID.randomUUID);
+    filepath = strcat('all_local_data/', uuid, '.mat');
+    fprintf('Finished run, saving to %s\n', filepath);
+    save(filepath, 'out_struct_max', 'test_param', 'summary');
 end
 
 end
