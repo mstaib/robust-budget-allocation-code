@@ -58,7 +58,7 @@ function [param_max, param_min, R_cell, oracle_R] = prepare_inputs(test_param, f
     
     %% input setup for minimization problem
     param_min.param_F = param_F;
-    param_min.maxiter = 2;
+    param_min.maxiter = 100;
     param_min.k_vec = param_F.k_vec; %param_F.k_mat(param_F.var_indices);
     param_min.x_lower = param_F.x_lower; %param_F.x_lower(param_F.var_indices);
     param_min.x_upper = param_F.x_upper; %param_F.x_upper(param_F.var_indices);
