@@ -1,9 +1,10 @@
-clear all
+PARALLEL=0; % used on the cluster for pMATLAB
 
 eps = 0.001;
 prob_edge = 1;
 
 y_constraint_fracs = logspace(log10(0.2), log10(10), 8);
+y_constraint_fracs = y_constraint_fracs([1 5]);
 S = 6;
 T = 2;
 
@@ -18,8 +19,8 @@ confidence = 0.95;
 problem = problem_confidence_func(confidence);
 
 kk = 1;
-for ust=[UncertaintySetType.Dnorm, ...
-         UncertaintySetType.Ellipsoidal]
+for ust=UncertaintySetType.Ellipsoidal%[UncertaintySetType.Dnorm, ...
+         %UncertaintySetType.Ellipsoidal]
 
      if ust == UncertaintySetType.Dnorm
          x_constraints = linspace(0.01,0.8,80)*nnz(problem.var_edges);
@@ -32,15 +33,15 @@ for ust=[UncertaintySetType.Dnorm, ...
             test_param.x_constraint = x_constraints(ii);
             test_param.y_constraint = y_constraint_frac*T;
             test_param.eps = eps;
-            test_param.verbose = 1;
+            test_param.verbose = 2;
             test_param.maxiters = 200;
             test_param.problem = problem;
-            test_param.uncertainty_set_type = UncertaintySetType.Dnorm;
+            test_param.uncertainty_set_type = ust;
 
 
-            for aa=[AdversaryAlgorithm.SubmodularMinimization, ...
-                    AdversaryAlgorithm.SubsampledSubmodularMinimization, ...
-                    AdversaryAlgorithm.ProjectedGradient]
+            for aa=[AdversaryAlgorithm.SubmodularMinimization]
+                    %AdversaryAlgorithm.SubsampledSubmodularMinimization]
+                    %AdversaryAlgorithm.ProjectedGradient]
 
                 test_param.adversary_algorithm = aa;
                 
@@ -52,4 +53,11 @@ for ust=[UncertaintySetType.Dnorm, ...
     end
 end
 
-run_all_params(test_params);
+n = length(test_params);
+if PARALLEL
+    myIndices = global_ind(zeros(n,1,map([Np 1],'c',0:Np-1)));
+    myIndices
+else
+    myIndices = 1;
+end
+run_all_params(test_params(myIndices));
