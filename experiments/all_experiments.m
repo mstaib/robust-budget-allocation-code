@@ -19,8 +19,8 @@ confidence = 0.95;
 problem = problem_confidence_func(confidence);
 
 kk = 1;
-for ust=UncertaintySetType.Ellipsoidal%[UncertaintySetType.Dnorm, ...
-         %UncertaintySetType.Ellipsoidal]
+for ust=[UncertaintySetType.Dnorm, ...
+         UncertaintySetType.Ellipsoidal]
 
      if ust == UncertaintySetType.Dnorm
          x_constraints = linspace(0.01,0.8,80)*nnz(problem.var_edges);
