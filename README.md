@@ -18,3 +18,6 @@ At this point you can run the experiments from the paper, or try your own by pas
 * After running the synthetic experiments (`experiments/all_experiments.m`), and pointing it to the corresponding output folder, `experiments/synthetic_influence_comparison_plots.m` will produce Figure 2 from the paper.
 * After running the Yahoo! experiments (`experiments/all_yahoo_experiments.m`) and pointing it to the corresponding output folder, `experiments/plot_yahoo_convergence.m` produces Figure 3 from the paper.
 * After running the Yahoo! experiments (`experiments/all_yahoo_experiments.m`) and pointing it to the output file from a particular run, `experiments/gradient_descent_yahoo_compare.m` produces Figure 4 from the paper (requires MOSEK).
+
+
+I am still in the process of better documenting parts of the code (this is a living repo), but for now, enjoy!
