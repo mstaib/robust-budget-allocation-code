@@ -1,7 +1,7 @@
 # Robust Budget Allocation via Continuous Submodular Functions
 This repository contains the supporting code for the paper:
 
-[Staib, Matthew and Jegelka, Stefanie. Robust Budget Allocation via Continuous Submodular Functions. In _ICML_, 2017.](https://arxiv.org/abs/1702.08791)
+[Staib, Matthew and Jegelka, Stefanie. Robust Budget Allocation via Continuous Submodular Functions. In _Proceedings of the 34th International Conference on Machine Learning_, 2017.](https://arxiv.org/abs/1702.08791)
 
 ## Dependencies
 * [TFOCS](https://github.com/cvxr/TFOCS)
