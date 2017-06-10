@@ -3,6 +3,15 @@ This repository contains the supporting code for the paper:
 
 [Staib, Matthew and Jegelka, Stefanie. Robust Budget Allocation via Continuous Submodular Functions. In _Proceedings of the 34th International Conference on Machine Learning_, 2017.](https://arxiv.org/abs/1702.08791)
 
+```
+@inproceedings{staib2017robust,
+ author = {Staib, Matthew and Jegelka, Stefanie},
+ title = {Robust Budget Allocation via Continuous Submodular Functions},
+ booktitle = {Proceedings of the 34th International Conference on Machine Learning},
+ year = {2017}
+}
+```
+
 ## Dependencies
 * [TFOCS](https://github.com/cvxr/TFOCS)
 * [MOSEK](https://www.mosek.com/) (for the first-order comparison experiments)
